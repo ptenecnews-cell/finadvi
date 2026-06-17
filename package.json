@@ -1,0 +1,19 @@
+{
+  "name": "finadvi",
+  "version": "1.0.0",
+  "description": "FinAdvi — mobile-first finance app with OCR receipts and a Gemini AI coach (proxied backend).",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.7.0"
+  }
+}

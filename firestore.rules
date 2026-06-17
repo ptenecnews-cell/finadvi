@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /expenses/{expenseId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && validExpense();
+        allow update: if false;
+      }
+
+      match /recurring_expenses/{subId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && validSubscription();
+        allow update: if isOwner(userId) && validSubscriptionUpdate();
+      }
+
+      match /chat_history/{msgId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && validChatMessage();
+        allow update: if false;
+      }
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validExpense() {
+      return request.resource.data.keys().hasAll(['merchant', 'amount', 'category', 'source', 'createdAt'])
+        && request.resource.data.merchant is string
+        && request.resource.data.merchant.size() > 0
+        && request.resource.data.merchant.size() < 120
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.amount < 1000000
+        && request.resource.data.category is string
+        && request.resource.data.source in ['manual', 'ocr', 'recurring'];
+    }
+
+    function validSubscription() {
+      return request.resource.data.keys().hasAll(['name', 'amount', 'category', 'billingDay', 'nextBillingDate', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.amount < 1000000
+        && request.resource.data.billingDay is int
+        && request.resource.data.billingDay >= 1
+        && request.resource.data.billingDay <= 31;
+    }
+
+    function validSubscriptionUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nextBillingDate']);
+    }
+
+    function validChatMessage() {
+      return request.resource.data.keys().hasAll(['role', 'text', 'createdAt'])
+        && request.resource.data.role in ['user', 'assistant']
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() < 8000;
+    }
+  }
+}

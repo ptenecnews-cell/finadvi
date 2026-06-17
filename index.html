@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1120" />
+  <title>FinAdvi — Smart Finance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- ============ DASHBOARD VIEW ============ -->
+    <main class="view view--active" id="view-dashboard" data-view="dashboard">
+      <header class="app-header">
+        <div>
+          <p class="app-header__greeting">Good afternoon</p>
+          <h1 class="app-header__title">Dashboard</h1>
+        </div>
+        <button class="avatar" id="sign-out-btn" type="button" title="Sign out" aria-label="Sign out">AV</button>
+      </header>
+
+      <section class="stat-grid">
+        <div class="stat-card stat-card--primary">
+          <span class="stat-card__label">Total Spent</span>
+          <span class="stat-card__value" id="stat-total-spent">$0.00</span>
+          <span class="stat-card__meta" id="stat-spent-meta">This month</span>
+          <div class="cap-progress" id="cap-progress" hidden>
+            <div class="cap-progress__fill" id="cap-progress-fill"></div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">
+            <span class="dot dot--emerald"></span>Tax Reserved
+          </span>
+          <span class="stat-card__value stat-card__value--emerald" id="stat-tax-reserved">$0.00</span>
+          <span class="stat-card__meta">25% set aside</span>
+        </div>
+      </section>
+
+      <section class="cap-panel" aria-label="Spending cap">
+        <div class="cap-panel__info">
+          <span class="cap-panel__label">Monthly spending cap</span>
+          <span class="cap-panel__value" id="cap-display">Not set</span>
+        </div>
+        <button class="link-btn" id="open-cap" type="button">Set cap</button>
+      </section>
+
+      <section class="control-panel" aria-label="Quick actions">
+        <button class="action-btn action-btn--primary" id="open-expense" type="button">
+          <span class="action-btn__icon" aria-hidden="true">+</span>
+          <span class="action-btn__text">
+            <strong>Add Expense</strong>
+            <small>One-time entry</small>
+          </span>
+        </button>
+        <button class="action-btn" id="open-subscription" type="button">
+          <span class="action-btn__icon" aria-hidden="true">+</span>
+          <span class="action-btn__text">
+            <strong>Add Subscription</strong>
+            <small>Recurring bill</small>
+          </span>
+        </button>
+      </section>
+
+      <div class="alert-banner" id="spending-alert" role="alert" hidden>
+        <span class="alert-banner__icon" aria-hidden="true">!</span>
+        <p id="spending-alert-text"></p>
+      </div>
+
+      <section class="section">
+        <div class="section__head">
+          <h2 class="section__title">Recent Transactions</h2>
+          <button class="link-btn" type="button">See all</button>
+        </div>
+        <ul class="txn-list" id="txn-list" aria-label="Recent transactions"></ul>
+      </section>
+    </main>
+
+    <!-- ============ SCAN RECEIPT VIEW ============ -->
+    <main class="view" id="view-scan" data-view="scan">
+      <header class="app-header">
+        <div>
+          <p class="app-header__greeting">Capture &amp; categorize</p>
+          <h1 class="app-header__title">Scan Receipt</h1>
+        </div>
+      </header>
+
+      <section class="scan-stage">
+        <div class="scan-frame" id="scan-frame">
+          <img class="scan-preview" id="scan-preview" alt="Receipt preview" hidden />
+          <div class="scan-frame__corners" id="scan-corners">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="scan-frame__line" id="scan-line"></div>
+          <div class="scan-frame__hint" id="scan-hint">
+            <div class="scan-frame__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9V7a2 2 0 0 1 2-2h2"/><path d="M17 5h2a2 2 0 0 1 2 2v2"/>
+                <path d="M21 15v2a2 2 0 0 1-2 2h-2"/><path d="M7 19H5a2 2 0 0 1-2-2v-2"/>
+                <rect x="7" y="9" width="10" height="6" rx="1"/>
+              </svg>
+            </div>
+            <p>Take a photo or upload a receipt image</p>
+          </div>
+          <p class="scan-progress" id="scan-progress" hidden>Recognizing text… 0%</p>
+        </div>
+
+        <div class="scan-result" id="scan-result" hidden>
+          <h3>Review receipt</h3>
+          <form class="scan-review" id="scan-review-form">
+            <label class="field">
+              <span class="field__label">Merchant</span>
+              <input class="field__input" id="scan-merchant-input" type="text" required />
+            </label>
+            <label class="field">
+              <span class="field__label">Amount</span>
+              <div class="field__money">
+                <span class="field__prefix">$</span>
+                <input class="field__input field__input--money" id="scan-amount-input" type="number" inputmode="decimal" step="0.01" min="0" required />
+              </div>
+            </label>
+            <label class="field">
+              <span class="field__label">Category</span>
+              <select class="field__input field__select" id="scan-category-input" required>
+                <option>Groceries</option>
+                <option>Dining</option>
+                <option>Transport</option>
+                <option>Shopping</option>
+                <option>Health</option>
+                <option>Entertainment</option>
+                <option>Supplies</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">Date</span>
+              <input class="field__input" id="scan-date-input" type="date" required />
+            </label>
+            <button class="btn btn--primary btn--block" type="submit">Save to expenses</button>
+            <button class="btn btn--ghost btn--block" id="scan-retake-btn" type="button">Scan another</button>
+          </form>
+          <p class="scan-save" id="scan-save"></p>
+        </div>
+      </section>
+
+      <input type="file" id="ocr-camera" accept="image/*" capture="environment" hidden />
+      <input type="file" id="ocr-file" accept="image/*" hidden />
+      <button class="btn btn--primary btn--block" id="camera-btn" type="button">Take Photo</button>
+      <button class="btn btn--ghost btn--block" id="upload-btn" type="button">Upload from Gallery</button>
+      <p class="scan-note" id="scan-note">Receipts are read on your device with OCR, then saved to your account.</p>
+    </main>
+
+    <!-- ============ AI COACH VIEW ============ -->
+    <main class="view view--chat" id="view-coach" data-view="coach">
+      <header class="app-header app-header--chat">
+        <div class="coach-id">
+          <div class="coach-id__avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4"/><path d="M5 8h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
+              <circle cx="8.5" cy="13" r="1.2"/><circle cx="15.5" cy="13" r="1.2"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="app-header__title">AI Coach</h1>
+            <p class="coach-id__status"><span class="dot dot--emerald"></span>Online</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="chat-log" id="chat-log" aria-live="polite"></div>
+
+      <form class="chat-input" id="chat-form" autocomplete="off">
+        <input
+          class="chat-input__field"
+          id="chat-field"
+          type="text"
+          placeholder="Ask about your finances…"
+          aria-label="Message AI Coach"
+        />
+        <button class="chat-input__send" id="chat-send" type="submit" aria-label="Send message">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+          </svg>
+        </button>
+      </form>
+    </main>
+
+    <!-- ============ BOTTOM NAV ============ -->
+    <nav class="bottom-nav" aria-label="Primary">
+      <button class="nav-item nav-item--active" data-target="dashboard" type="button">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+          <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item nav-item--scan" data-target="scan" type="button">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9V7a2 2 0 0 1 2-2h2"/><path d="M17 5h2a2 2 0 0 1 2 2v2"/>
+          <path d="M21 15v2a2 2 0 0 1-2 2h-2"/><path d="M7 19H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/>
+        </svg>
+        <span>Scan</span>
+      </button>
+      <button class="nav-item" data-target="coach" type="button">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/>
+        </svg>
+        <span>AI Coach</span>
+      </button>
+    </nav>
+
+    <!-- ============ EXPENSE MODAL ============ -->
+    <div class="modal" id="modal-expense" hidden>
+      <div class="modal__scrim" data-close></div>
+      <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-title">
+        <div class="modal__grip" aria-hidden="true"></div>
+        <header class="modal__head">
+          <h2 class="modal__title" id="expense-title">Add Expense</h2>
+          <button class="modal__close" type="button" data-close aria-label="Close">×</button>
+        </header>
+        <form class="modal__form" id="form-expense">
+          <label class="field">
+            <span class="field__label">Merchant Name</span>
+            <input class="field__input" name="merchant" type="text" placeholder="e.g. Corner Cafe" required />
+          </label>
+          <label class="field">
+            <span class="field__label">Amount</span>
+            <div class="field__money">
+              <span class="field__prefix">$</span>
+              <input class="field__input field__input--money" name="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required />
+            </div>
+          </label>
+          <label class="field">
+            <span class="field__label">Category</span>
+            <select class="field__input field__select" name="category" required>
+              <option value="" disabled selected>Select category</option>
+              <option>Groceries</option>
+              <option>Dining</option>
+              <option>Transport</option>
+              <option>Shopping</option>
+              <option>Health</option>
+              <option>Entertainment</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">Date</span>
+            <input class="field__input" name="date" type="date" required />
+          </label>
+          <button class="btn btn--primary btn--block" type="submit">Save Expense</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ SUBSCRIPTION MODAL ============ -->
+    <div class="modal" id="modal-subscription" hidden>
+      <div class="modal__scrim" data-close></div>
+      <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="sub-title">
+        <div class="modal__grip" aria-hidden="true"></div>
+        <header class="modal__head">
+          <h2 class="modal__title" id="sub-title">Add Subscription</h2>
+          <button class="modal__close" type="button" data-close aria-label="Close">×</button>
+        </header>
+        <form class="modal__form" id="form-subscription">
+          <label class="field">
+            <span class="field__label">Subscription Name</span>
+            <input class="field__input" name="merchant" type="text" placeholder="e.g. Netflix, iCloud, Gym" required />
+          </label>
+          <label class="field">
+            <span class="field__label">Amount</span>
+            <div class="field__money">
+              <span class="field__prefix">$</span>
+              <input class="field__input field__input--money" name="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required />
+            </div>
+          </label>
+          <label class="field">
+            <span class="field__label">Category</span>
+            <select class="field__input field__select" name="category" required>
+              <option value="" disabled selected>Select category</option>
+              <option>Streaming</option>
+              <option>Software</option>
+              <option>Cloud Storage</option>
+              <option>Fitness</option>
+              <option>Utilities</option>
+              <option>News &amp; Media</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">Billing Day of Month</span>
+            <input class="field__input" name="billingDay" type="number" inputmode="numeric" min="1" max="31" placeholder="1–31" required />
+          </label>
+          <button class="btn btn--primary btn--block" type="submit">Save Subscription</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ SPENDING CAP MODAL ============ -->
+    <div class="modal" id="modal-cap" hidden>
+      <div class="modal__scrim" data-close></div>
+      <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="cap-title">
+        <div class="modal__grip" aria-hidden="true"></div>
+        <header class="modal__head">
+          <h2 class="modal__title" id="cap-title">Monthly Spending Cap</h2>
+          <button class="modal__close" type="button" data-close aria-label="Close">×</button>
+        </header>
+        <form class="modal__form" id="form-cap">
+          <label class="field">
+            <span class="field__label">Cap amount (USD)</span>
+            <div class="field__money">
+              <span class="field__prefix">$</span>
+              <input class="field__input field__input--money" name="cap" type="number" inputmode="decimal" step="1" min="0" placeholder="e.g. 2000" required />
+            </div>
+          </label>
+          <p class="field__hint">You'll get an alert when this month's spending exceeds this amount.</p>
+          <button class="btn btn--primary btn--block" type="submit">Save Cap</button>
+          <button class="btn btn--ghost btn--block" id="clear-cap" type="button">Remove cap</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ GOOGLE SIGN-IN GATE ============ -->
+    <div class="auth-gate" id="auth-gate">
+      <div class="auth-gate__card">
+        <div class="auth-gate__logo" aria-hidden="true">$</div>
+        <h2 class="auth-gate__title">Welcome to FinAdvi</h2>
+        <p class="auth-gate__text">Sign in with Google to access your personal finance dashboard across devices.</p>
+        <button class="btn btn--google btn--block" id="google-sign-in" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
+        <p class="auth-gate__error" id="auth-error" hidden></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OCR engine (local, in-browser) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <!-- UI logic -->
+  <script src="app.js"></script>
+  <!-- Firebase v10 + OCR pipeline (ES module) -->
+  <script type="module" src="firebase.js"></script>
+</body>
+</html>
