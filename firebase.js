@@ -565,6 +565,8 @@ window.FinAdvi = {
   saveChatMessage,
   updateSubscriptionNextBilling,
   nextMonthFrom,
+  resetScanUI,
+  ensureScanTabVisible,
 };
 
 /* ------------------------------------------------------------
@@ -579,11 +581,19 @@ function setScanButtonsDisabled(disabled) {
   });
 }
 
-function setCaptureVisible(visible) {
-  const capture = document.getElementById("scan-capture");
+function setActionsVisible(visible) {
   const actions = document.getElementById("scan-actions");
-  if (capture) capture.hidden = !visible;
   if (actions) actions.hidden = !visible;
+}
+
+/** Prevent blank scan tab when upload buttons were left hidden without review. */
+function ensureScanTabVisible() {
+  const result = document.getElementById("scan-result");
+  const actions = document.getElementById("scan-actions");
+  const inReview = result && !result.hidden;
+  if (!inReview && actions?.hidden) {
+    resetScanUI();
+  }
 }
 
 function resetScanUI() {
@@ -614,7 +624,9 @@ function resetScanUI() {
   }
   if (note) note.textContent = "Receipts are read on your device with OCR, then saved to your account.";
   pendingScan = null;
-  setCaptureVisible(true);
+  const capture = document.getElementById("scan-capture");
+  if (capture) capture.hidden = false;
+  setActionsVisible(true);
   setScanButtonsDisabled(false);
 }
 
@@ -630,7 +642,7 @@ function showScanReview(parsed) {
   if (categoryInput) categoryInput.value = parsed.category || "Other";
   if (dateInput) dateInput.value = parsed.date || new Date().toISOString().slice(0, 10);
 
-  setCaptureVisible(false);
+  setActionsVisible(false);
   if (result) result.hidden = false;
 }
 
@@ -653,7 +665,7 @@ async function handleReceiptFile(file) {
   result.hidden = true;
   saveStatus.textContent = "";
   saveStatus.className = "scan-save";
-  setCaptureVisible(true);
+  setActionsVisible(true);
   hint.style.display = "none";
   corners.style.display = "none";
   preview.src = URL.createObjectURL(file);
@@ -679,7 +691,7 @@ async function handleReceiptFile(file) {
     hint.style.display = "flex";
     corners.style.display = "";
     preview.hidden = true;
-    setCaptureVisible(true);
+    setActionsVisible(true);
     note.textContent = err.message || "Couldn't read that image. Try a clearer photo in good light.";
   } finally {
     setScanButtonsDisabled(false);
@@ -744,10 +756,10 @@ function initScanUI() {
       });
       saveStatus.textContent = `Saved to expenses (#${id.slice(0, 6)})`;
       saveStatus.className = "scan-save scan-save--ok";
+      resetScanUI();
       document.getElementById("scan-note").textContent =
         "Receipt saved! Opening your Dashboard…";
       document.dispatchEvent(new CustomEvent("finadvi:expense-saved"));
-      setTimeout(resetScanUI, 1200);
     } catch (err) {
       console.error("[FinAdvi] Failed to save receipt:", err);
       const msg = err.code === "permission-denied"
@@ -759,6 +771,8 @@ function initScanUI() {
       submitBtn.disabled = false;
     }
   });
+
+  resetScanUI();
 }
 
 if (document.readyState === "loading") {

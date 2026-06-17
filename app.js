@@ -272,6 +272,9 @@ function switchView(target) {
   if (target === "coach") {
     setTimeout(() => document.getElementById("chat-field").focus(), 300);
   }
+  if (target === "scan") {
+    window.FinAdvi?.ensureScanTabVisible?.();
+  }
 }
 
 navItems.forEach((item) =>

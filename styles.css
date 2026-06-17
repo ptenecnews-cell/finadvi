@@ -395,8 +395,7 @@ body {
 .btn--block { width: 100%; padding: 16px; }
 .btn--block + .btn--block { margin-top: 10px; }
 #scan-actions { margin-top: auto; }
-#scan-actions[hidden],
-#scan-capture[hidden] { display: none; }
+#scan-actions[hidden] { display: none; }
 #camera-btn { margin-top: 0; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
