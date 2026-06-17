@@ -597,7 +597,16 @@ function ensureScanTabVisible() {
   }
 }
 
+function localTodayISO() {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, "0");
+  const d = String(n.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function resetScanUI() {
+  const stage = document.getElementById("scan-stage");
   const frame = document.getElementById("scan-frame");
   const hint = document.getElementById("scan-hint");
   const corners = document.getElementById("scan-corners");
@@ -608,6 +617,7 @@ function resetScanUI() {
   const note = document.getElementById("scan-note");
   const reviewForm = document.getElementById("scan-review-form");
 
+  stage?.classList.remove("scan-stage--review");
   frame?.classList.remove("is-scanning");
   if (hint) hint.style.display = "flex";
   if (corners) corners.style.display = "";
@@ -660,20 +670,29 @@ function showScanReview(parsed) {
   const amountInput = document.getElementById("scan-amount-input");
   const categoryInput = document.getElementById("scan-category-input");
   const dateInput = document.getElementById("scan-date-input");
+  const stage = document.getElementById("scan-stage");
+  const hint = document.getElementById("scan-hint");
+  const corners = document.getElementById("scan-corners");
+  const preview = document.getElementById("scan-preview");
+  const capture = document.getElementById("scan-capture");
 
   if (merchantInput) merchantInput.value = parsed.merchant || "";
   if (amountInput) amountInput.value = parsed.total != null ? parsed.total : "";
   if (categoryInput) categoryInput.value = parsed.category || "Other";
-  if (dateInput) dateInput.value = parsed.date || new Date().toISOString().slice(0, 10);
+  // Default to today so new scans count toward this month's Total Spent
+  if (dateInput) dateInput.value = localTodayISO();
 
-  const capture = document.getElementById("scan-capture");
-  if (capture) capture.hidden = true;
+  stage?.classList.add("scan-stage--review");
+  if (capture) capture.hidden = false;
+  if (preview) preview.hidden = false;
+  if (hint) hint.style.display = "none";
+  if (corners) corners.style.display = "none";
   setActionsVisible(false);
   if (result) result.hidden = false;
 
   const note = document.getElementById("scan-note");
   if (note) {
-    note.textContent = "Review the details below, then save to your expenses.";
+    note.textContent = "Check the receipt photo and details, then save.";
     note.className = "scan-note";
   }
 }
@@ -770,11 +789,12 @@ function initScanUI() {
 
     submitBtn.disabled = true;
     try {
+      const expenseDate = date || localTodayISO();
       const id = await createExpense({
         merchant,
         amount,
         category,
-        date,
+        date: expenseDate,
         rawText: pendingScan?.rawText || "",
         source: "ocr",
         includesTax: true,
@@ -784,7 +804,19 @@ function initScanUI() {
       resetScanUI();
       document.getElementById("scan-note").textContent =
         "Receipt saved! Opening your Dashboard…";
-      document.dispatchEvent(new CustomEvent("finadvi:expense-saved"));
+      document.dispatchEvent(
+        new CustomEvent("finadvi:expense-saved", {
+          detail: {
+            id,
+            merchant,
+            amount,
+            category,
+            date: expenseDate,
+            source: "ocr",
+            includesTax: true,
+          },
+        })
+      );
     } catch (err) {
       console.error("[FinAdvi] Failed to save receipt:", err);
       const msg = err.code === "permission-denied"

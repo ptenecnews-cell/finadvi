@@ -24,11 +24,38 @@ const tsToDate = (ts) =>
     ? ts.toDate().toISOString().slice(0, 10)
     : ts || null;
 
+function parseLocalDateOnly(raw) {
+  if (typeof raw !== "string") return null;
+  const m = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function localTodayISO() {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, "0");
+  const d = String(n.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function parseExpenseDate(expense) {
-  const raw = expense.date || tsToDate(expense.createdAt);
+  if (expense.date) {
+    const local = parseLocalDateOnly(expense.date);
+    if (local) return local;
+  }
+  const raw = tsToDate(expense.createdAt);
   if (!raw) return null;
+  const local = parseLocalDateOnly(raw);
+  if (local) return local;
   const d = new Date(raw);
-  return isNaN(d) ? null : d;
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function isCurrentMonth(date) {
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
 }
 
 function formatMetaDate(date) {
@@ -119,12 +146,9 @@ function pushCapNotification(spent, cap, over) {
 }
 
 function renderDashboard() {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
   const monthExpenses = userExpenses.filter((e) => {
-    const d = parseExpenseDate(e);
-    return d && d >= monthStart;
+    const d = parseExpenseDate(e) || new Date();
+    return isCurrentMonth(d);
   });
 
   const totalSpent = monthExpenses.reduce(
@@ -485,7 +509,7 @@ document.getElementById("form-expense").addEventListener("submit", async (e) => 
         merchant,
         amount,
         category,
-        date: dateVal || new Date().toISOString().slice(0, 10),
+        date: dateVal || localTodayISO(),
         source: "manual",
       });
     } catch (err) {
@@ -649,7 +673,12 @@ addBubble(
   "ai"
 );
 
-document.addEventListener("finadvi:expense-saved", () => {
+document.addEventListener("finadvi:expense-saved", (e) => {
+  const exp = e.detail;
+  if (exp?.id && !userExpenses.some((x) => x.id === exp.id)) {
+    userExpenses = [exp, ...userExpenses];
+    renderDashboard();
+  }
   switchView("dashboard");
 });
 

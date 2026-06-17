@@ -410,6 +410,21 @@ body {
   gap: 18px;
   padding: 10px 0;
 }
+.scan-stage--review {
+  justify-content: flex-start;
+  gap: 14px;
+}
+.scan-stage--review .scan-frame {
+  width: 100%;
+  max-width: 320px;
+  max-height: min(40vh, 260px);
+  aspect-ratio: auto;
+  min-height: 160px;
+}
+.scan-stage--review .scan-preview {
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.35);
+}
 .scan-frame {
   position: relative;
   width: 100%;
