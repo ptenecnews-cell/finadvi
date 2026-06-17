@@ -626,6 +626,8 @@ function resetScanUI() {
     preview.hidden = true;
     preview.removeAttribute("src");
   }
+  const thumb = document.getElementById("scan-thumb");
+  if (thumb) thumb.removeAttribute("src");
   if (progress) progress.hidden = true;
   if (result) result.hidden = true;
   if (reviewForm) reviewForm.reset();
@@ -671,10 +673,9 @@ function showScanReview(parsed) {
   const categoryInput = document.getElementById("scan-category-input");
   const dateInput = document.getElementById("scan-date-input");
   const stage = document.getElementById("scan-stage");
-  const hint = document.getElementById("scan-hint");
-  const corners = document.getElementById("scan-corners");
-  const preview = document.getElementById("scan-preview");
   const capture = document.getElementById("scan-capture");
+  const preview = document.getElementById("scan-preview");
+  const thumb = document.getElementById("scan-thumb");
 
   if (merchantInput) merchantInput.value = parsed.merchant || "";
   if (amountInput) amountInput.value = parsed.total != null ? parsed.total : "";
@@ -682,17 +683,17 @@ function showScanReview(parsed) {
   // Default to today so new scans count toward this month's Total Spent
   if (dateInput) dateInput.value = localTodayISO();
 
+  // Copy preview image into the compact review thumbnail
+  if (thumb && preview && preview.src) thumb.src = preview.src;
+
   stage?.classList.add("scan-stage--review");
-  if (capture) capture.hidden = false;
-  if (preview) preview.hidden = false;
-  if (hint) hint.style.display = "none";
-  if (corners) corners.style.display = "none";
+  if (capture) capture.hidden = true;
   setActionsVisible(false);
   if (result) result.hidden = false;
 
   const note = document.getElementById("scan-note");
   if (note) {
-    note.textContent = "Check the receipt photo and details, then save.";
+    note.textContent = "Check the details, then save to your expenses.";
     note.className = "scan-note";
   }
 }

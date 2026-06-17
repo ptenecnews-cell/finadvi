@@ -400,7 +400,22 @@ body {
 #camera-btn { margin-top: 0; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* ---------- Scan view ---------- */
+/* Scan view: no horizontal padding so the review card is edge-to-edge */
+#view-scan {
+  padding-left: 0;
+  padding-right: 0;
+}
+#view-scan .app-header,
+#view-scan #scan-actions,
+#view-scan .scan-note,
+#view-scan #scan-capture {
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+#view-scan #scan-capture { width: 100%; }
+
+/* ---------- Scan view layout ---------- */
 .scan-stage {
   flex: 1;
   display: flex;
@@ -412,19 +427,64 @@ body {
 }
 .scan-stage--review {
   justify-content: flex-start;
-  gap: 14px;
+  gap: 0;
+  padding: 0;
 }
-.scan-stage--review .scan-frame {
+
+/* ---- Review card (shown after OCR) ---- */
+.scan-result {
   width: 100%;
-  max-width: 320px;
-  max-height: min(40vh, 260px);
-  aspect-ratio: auto;
-  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  animation: viewIn 0.3s var(--ease);
 }
-.scan-stage--review .scan-preview {
-  object-fit: contain;
-  background: rgba(0, 0, 0, 0.35);
+.scan-result[hidden] { display: none; }
+
+.scan-thumb-wrap {
+  width: 100%;
+  max-height: 220px;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: #000;
+  flex-shrink: 0;
 }
+.scan-thumb {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  object-position: top;
+  opacity: 0.92;
+}
+
+.scan-review__title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 14px 16px 6px;
+}
+
+.scan-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 4px;
+}
+.scan-review .field { margin: 0; }
+.scan-review .btn--block { margin-top: 4px; }
+.scan-review .btn--block + .btn--block { margin-top: 8px; }
+.scan-save {
+  margin: 6px 0 0;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 16px;
+  text-align: center;
+}
+.scan-save--ok { color: var(--emerald); }
+.scan-save--err { color: var(--amber); }
 .scan-frame {
   position: relative;
   width: 100%;
@@ -502,18 +562,6 @@ body {
 }
 .scan-frame__icon { color: var(--text-dim); }
 
-.scan-result {
-  width: 100%;
-  max-width: 360px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: viewIn 0.4s var(--ease);
-}
-.scan-result[hidden] { display: none; }
-.scan-result h3 { font-size: 16px; font-weight: 700; text-align: center; }
-.scan-review { display: flex; flex-direction: column; gap: 12px; }
-.scan-review .btn--block + .btn--block { margin-top: 0; }
 .scan-note {
   text-align: center;
   font-size: 11.5px;
@@ -527,14 +575,6 @@ body {
   font-size: 13px;
   font-weight: 600;
 }
-.scan-save {
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  min-height: 16px;
-}
-.scan-save--ok { color: var(--emerald); }
-.scan-save--err { color: var(--amber); }
 
 /* ---------- AI Coach / chat ---------- */
 .view--chat {
