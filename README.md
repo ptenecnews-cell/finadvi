@@ -1,135 +1,58 @@
 # FinAdvi
 
-A mobile-first personal finance web app: spending dashboard, OCR receipt scanning (Tesseract.js), recurring subscriptions, and an AI Coach powered by **Google Gemini 1.5 Flash**. Data is stored in **Firebase (Auth + Firestore)**, and the Gemini key is kept safe behind a small **Node/Express proxy**.
+**Your personal finance companion — track spending, scan receipts, and get smart money advice.**
 
-## Architecture
+FinAdvi is a mobile-first web app built for people who want a simple, private way to manage day-to-day finances. Sign in with Google, and your dashboard follows you everywhere.
 
-```
-Browser (index.html + app.js + firebase.js)
-  ├── Firebase Web SDK  ──►  Firestore (expenses, recurring_expenses, chat_history)
-  └── fetch /api/chat   ──►  Express proxy (server/server.js)  ──►  Gemini 1.5 Flash
-                                   (holds GEMINI_API_KEY)
-```
+---
 
-The Express server also serves the static frontend, so a single deployment hosts both the site and the API.
+## What you can do
 
-## Prerequisites
+### Dashboard
+See how much you've spent this month at a glance. Set a **monthly spending cap** and get an alert if you go over. Add one-time expenses, manage recurring subscriptions, and delete anything you entered by mistake.
 
-- [Node.js](https://nodejs.org) **18 or newer**
-- A **Firebase** project (Auth + Firestore enabled)
-- A **Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey)
+### Scan Receipt
+Take a photo of a receipt or upload an image from your gallery. FinAdvi reads it on your device, pulls out the merchant, date, and **total paid (including tax)**, lets you review the details, and saves it to your expense tracker.
 
-## 1. Configure Firebase (client)
+### AI Coach
+Chat with a personal finance assistant that knows your real spending. Ask about your budget, subscriptions, tax set-aside, or where your money is going — and get answers based on your actual data.
 
-In the [Firebase console](https://console.firebase.google.com): create a project, enable **Authentication → Anonymous**, and create a **Firestore** database.
+---
 
-Copy your web app config into `firebase.js` (replace the `YOUR_*` placeholders):
+## Built for privacy
 
-```js
-const firebaseConfig = {
-  apiKey: "…",
-  authDomain: "…",
-  projectId: "…",
-  storageBucket: "…",
-  messagingSenderId: "…",
-  appId: "…",
-};
-```
+- **Your data is yours** — expenses, subscriptions, and chat history are stored securely and tied only to your Google account.
+- **Receipts stay on your device** — OCR runs locally in your browser; receipt photos are not uploaded to a server.
+- **Sign in once** — use the same Google account on any phone or computer and pick up where you left off.
 
-Set Firestore security rules so each user can only access their own data. **Full step-by-step guide:** see [`FIRESTORE_SETUP.md`](FIRESTORE_SETUP.md).
+---
 
-Quick version — paste into Firestore → Rules → Publish:
+## How it works
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      match /{subcollection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-    }
-  }
-}
-```
+1. **Sign in** with Google  
+2. **Add expenses** manually, scan a receipt, or set up recurring bills like Netflix or gym membership  
+3. **Watch your dashboard** update in real time — totals, tax reserve estimate, and recent transactions  
+4. **Talk to AI Coach** when you need help making sense of it all  
 
-Also enable **Google** sign-in under Authentication → Sign-in method.
+---
 
-## 2. Configure the server (Gemini key)
+## Designed for mobile
 
-```bash
-cp .env.example .env
-```
+FinAdvi is built to feel like a native app on your phone: dark, clean interface, bottom navigation, touch-friendly buttons, and a layout that works on any screen size.
 
-Edit `.env` and paste your key:
+---
 
-```
-GEMINI_API_KEY=your_key_from_google_ai_studio
-PORT=3000
-```
+## FinAdvi at a glance
 
-## 3. Run locally
+| | |
+|---|---|
+| **Track spending** | Monthly totals, categories, transaction history |
+| **Scan receipts** | Photo → auto-fill → save |
+| **Subscriptions** | Recurring bills billed automatically each month |
+| **Spending cap** | Set a limit, get notified when you exceed it |
+| **AI advice** | Personalized coaching from your real numbers |
+| **Multi-device** | Google Sign-In syncs across devices |
 
-```bash
-npm install
-npm run dev      # or: npm start
-```
+---
 
-Open <http://localhost:3000>. The server serves the site and proxies `/api/chat`.
-
-> Health check: <http://localhost:3000/api/health> should return `{ "ok": true, "geminiConfigured": true }`.
-
-## 4. Deploy
-
-The whole app is one Node web service. Any Node host works. **Set `GEMINI_API_KEY` as an environment variable in the host's dashboard — never commit `.env`.**
-
-### Option A — Render / Railway (simplest)
-1. Push this repo to GitHub.
-2. Create a new **Web Service** from the repo.
-3. Build command: `npm install` · Start command: `npm start`.
-4. Add an environment variable `GEMINI_API_KEY`.
-5. Deploy. The provided URL serves both site and API.
-
-### Option B — Google Cloud Run
-```bash
-gcloud run deploy finadvi \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars GEMINI_API_KEY=your_key
-```
-
-### Option C — Firebase Hosting + Cloud Run/Functions
-Host the static files on Firebase Hosting and route the API to the server with a rewrite in `firebase.json`:
-
-```json
-{
-  "hosting": {
-    "public": ".",
-    "ignore": ["server/**", "node_modules/**", "**/.*"],
-    "rewrites": [{ "source": "/api/**", "run": { "serviceId": "finadvi" } }]
-  }
-}
-```
-
-Then `firebase deploy --only hosting`.
-
-## Project structure
-
-```
-finadvi/
-├── index.html        # UI: Dashboard, Scan, AI Coach + modals
-├── styles.css        # Stitch-inspired dark-slate theme
-├── app.js            # UI logic, modals, subscriptions job, chat → /api/chat
-├── firebase.js       # Firebase v10 init, Firestore data layer, OCR pipeline
-├── server/
-│   └── server.js     # Express proxy: /api/chat → Gemini, serves static site
-├── package.json
-├── .env.example
-└── .gitignore
-```
-
-## Notes
-- The frontend calls `/api/chat` on the same origin by default. For split local dev (e.g. a separate static server), set `API_BASE` at the top of `app.js`.
-- Receipt OCR runs fully in the browser (Tesseract.js) — images are never uploaded.
+*FinAdvi — spend smarter, stay in control.*
