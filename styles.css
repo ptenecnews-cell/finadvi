@@ -412,8 +412,15 @@ body {
   padding-left: 20px;
   padding-right: 20px;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 360px;
+  align-self: center;
 }
-#view-scan #scan-capture { width: 100%; }
+#view-scan .app-header {
+  max-width: none;
+  padding-left: 20px;
+  padding-right: 20px;
+}
 
 /* ---------- Scan view layout ---------- */
 .scan-stage {
