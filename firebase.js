@@ -126,8 +126,10 @@ if (isConfigured) {
 // Matches money like 12.50 / 1,234.56 / 1 234.56
 const AMOUNT_RE = /(\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})/;
 
-const TOTAL_KEYWORDS = /\b(grand\s*total|total|amount\s*due|balance\s*due|amt)\b/i;
+const TOTAL_KEYWORDS = /\b(grand\s*total|total\s*due|amount\s*due|balance\s*due|total\s*paid|you\s*paid)\b/i;
+const SIMPLE_TOTAL_RE = /\btotal\b/i;
 const SUBTOTAL_RE = /\bsub[\s-]*total\b/i;
+const TAX_LINE_RE = /\b(sales\s*)?tax\b/i;
 
 const DATE_RE = new RegExp(
   [
@@ -192,6 +194,15 @@ function extractAmounts(text) {
   return found;
 }
 
+function amountFromLine(line) {
+  const amounts = [];
+  for (const m of line.matchAll(AMOUNT_RE)) {
+    const n = toNumber(m[1]);
+    if (n !== null) amounts.push(n);
+  }
+  return amounts.length ? amounts[amounts.length - 1] : null;
+}
+
 export function parseReceipt(text) {
   const lines = text
     .split(/\r?\n/)
@@ -207,20 +218,49 @@ export function parseReceipt(text) {
       return letters >= 3 && letters >= l.length * 0.45;
     })?.slice(0, 60) || "Unknown Merchant";
 
-  const totals = [];
-  for (const line of lines) {
-    if (SUBTOTAL_RE.test(line) || /\btax\b/i.test(line) || /\btip\b/i.test(line) || /\bchange\b/i.test(line)) continue;
+  let subtotal = null;
+  let taxAmount = null;
+  const grandTotals = [];
+  const totalLineAmounts = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (SUBTOTAL_RE.test(line)) {
+      const a = amountFromLine(line);
+      if (a !== null) subtotal = a;
+      continue;
+    }
+
+    if (TAX_LINE_RE.test(line) && !TOTAL_KEYWORDS.test(line) && !SIMPLE_TOTAL_RE.test(line)) {
+      const a = amountFromLine(line);
+      if (a !== null) taxAmount = a;
+      continue;
+    }
+
     if (TOTAL_KEYWORDS.test(line)) {
-      const m = line.match(AMOUNT_RE);
-      if (m) {
-        const n = toNumber(m[1]);
-        if (n !== null) totals.push(n);
-      }
+      const a = amountFromLine(line);
+      if (a !== null) grandTotals.push(a);
+      continue;
+    }
+
+    if (SIMPLE_TOTAL_RE.test(line) && !SUBTOTAL_RE.test(line) && !/\btip\b/i.test(line)) {
+      const a = amountFromLine(line);
+      if (a !== null) totalLineAmounts.push({ i, amount: a });
     }
   }
 
-  let total = totals.length ? Math.max(...totals) : null;
-  if (total === null) {
+  let total = null;
+  if (grandTotals.length) {
+    total = Math.max(...grandTotals);
+  } else if (totalLineAmounts.length) {
+    // Last TOTAL line is usually the final amount after tax
+    total = totalLineAmounts[totalLineAmounts.length - 1].amount;
+  } else if (subtotal !== null && taxAmount !== null) {
+    total = Math.round((subtotal + taxAmount) * 100) / 100;
+  } else if (subtotal !== null) {
+    total = subtotal;
+  } else {
     const amounts = extractAmounts(text);
     if (amounts.length) total = Math.max(...amounts);
   }
@@ -229,7 +269,7 @@ export function parseReceipt(text) {
   const date = normalizeDate(dateMatch ? dateMatch[0] : null);
   const category = guessCategory(merchant, text);
 
-  return { merchant, total, date, category };
+  return { merchant, total, subtotal, tax: taxAmount, date, category };
 }
 
 /** Enhance image contrast for better OCR on phone photos. */
@@ -395,6 +435,7 @@ export async function createExpense(data) {
     date: data.date ?? null,
     rawText: data.rawText ?? "",
     source: data.source ?? "manual",
+    includesTax: data.includesTax === true,
     createdAt: serverTimestamp(),
   });
   return docRef.id;
@@ -538,6 +579,13 @@ function setScanButtonsDisabled(disabled) {
   });
 }
 
+function setCaptureVisible(visible) {
+  const capture = document.getElementById("scan-capture");
+  const actions = document.getElementById("scan-actions");
+  if (capture) capture.hidden = !visible;
+  if (actions) actions.hidden = !visible;
+}
+
 function resetScanUI() {
   const frame = document.getElementById("scan-frame");
   const hint = document.getElementById("scan-hint");
@@ -547,6 +595,7 @@ function resetScanUI() {
   const result = document.getElementById("scan-result");
   const saveStatus = document.getElementById("scan-save");
   const note = document.getElementById("scan-note");
+  const reviewForm = document.getElementById("scan-review-form");
 
   frame?.classList.remove("is-scanning");
   if (hint) hint.style.display = "flex";
@@ -558,12 +607,14 @@ function resetScanUI() {
   }
   if (progress) progress.hidden = true;
   if (result) result.hidden = true;
+  if (reviewForm) reviewForm.reset();
   if (saveStatus) {
     saveStatus.textContent = "";
     saveStatus.className = "scan-save";
   }
   if (note) note.textContent = "Receipts are read on your device with OCR, then saved to your account.";
   pendingScan = null;
+  setCaptureVisible(true);
   setScanButtonsDisabled(false);
 }
 
@@ -579,6 +630,7 @@ function showScanReview(parsed) {
   if (categoryInput) categoryInput.value = parsed.category || "Other";
   if (dateInput) dateInput.value = parsed.date || new Date().toISOString().slice(0, 10);
 
+  setCaptureVisible(false);
   if (result) result.hidden = false;
 }
 
@@ -601,6 +653,7 @@ async function handleReceiptFile(file) {
   result.hidden = true;
   saveStatus.textContent = "";
   saveStatus.className = "scan-save";
+  setCaptureVisible(true);
   hint.style.display = "none";
   corners.style.display = "none";
   preview.src = URL.createObjectURL(file);
@@ -626,6 +679,7 @@ async function handleReceiptFile(file) {
     hint.style.display = "flex";
     corners.style.display = "";
     preview.hidden = true;
+    setCaptureVisible(true);
     note.textContent = err.message || "Couldn't read that image. Try a clearer photo in good light.";
   } finally {
     setScanButtonsDisabled(false);
@@ -686,14 +740,20 @@ function initScanUI() {
         date,
         rawText: pendingScan?.rawText || "",
         source: "ocr",
+        includesTax: true,
       });
       saveStatus.textContent = `Saved to expenses (#${id.slice(0, 6)})`;
       saveStatus.className = "scan-save scan-save--ok";
       document.getElementById("scan-note").textContent =
-        "Receipt saved! Check your Dashboard for the new transaction.";
+        "Receipt saved! Opening your Dashboard…";
+      document.dispatchEvent(new CustomEvent("finadvi:expense-saved"));
+      setTimeout(resetScanUI, 1200);
     } catch (err) {
       console.error("[FinAdvi] Failed to save receipt:", err);
-      saveStatus.textContent = "Could not save — check you're signed in.";
+      const msg = err.code === "permission-denied"
+        ? "Could not save — check Firestore rules are published."
+        : "Could not save — make sure you're signed in.";
+      saveStatus.textContent = msg;
       saveStatus.className = "scan-save scan-save--err";
     } finally {
       submitBtn.disabled = false;

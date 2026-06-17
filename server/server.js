@@ -145,6 +145,8 @@ app.post("/api/chat", rateLimitChat, requireFirebaseUser, async (req, res) => {
       `Today's date is ${today}. All monetary amounts are in US dollars (USD).`,
       "Give concise, practical, and friendly advice. Reply in the same language the user writes in.",
       "Base your answers on the user's financial data below (JSON).",
+      "IMPORTANT: All expense amounts are the TOTAL PAID including sales tax (grand total).",
+      "Do NOT add tax on top of expense amounts — they already include tax.",
       "",
       `EXPENSES_JSON: ${JSON.stringify(expenses).slice(0, 12000)}`,
       `RECURRING_SUBSCRIPTIONS_JSON: ${JSON.stringify(subscriptions).slice(0, 6000)}`,

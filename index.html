@@ -89,23 +89,25 @@
       </header>
 
       <section class="scan-stage">
-        <div class="scan-frame" id="scan-frame">
-          <img class="scan-preview" id="scan-preview" alt="Receipt preview" hidden />
-          <div class="scan-frame__corners" id="scan-corners">
-            <span></span><span></span><span></span><span></span>
-          </div>
-          <div class="scan-frame__line" id="scan-line"></div>
-          <div class="scan-frame__hint" id="scan-hint">
-            <div class="scan-frame__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9V7a2 2 0 0 1 2-2h2"/><path d="M17 5h2a2 2 0 0 1 2 2v2"/>
-                <path d="M21 15v2a2 2 0 0 1-2 2h-2"/><path d="M7 19H5a2 2 0 0 1-2-2v-2"/>
-                <rect x="7" y="9" width="10" height="6" rx="1"/>
-              </svg>
+        <div id="scan-capture">
+          <div class="scan-frame" id="scan-frame">
+            <img class="scan-preview" id="scan-preview" alt="Receipt preview" hidden />
+            <div class="scan-frame__corners" id="scan-corners">
+              <span></span><span></span><span></span><span></span>
             </div>
-            <p>Take a photo or upload a receipt image</p>
+            <div class="scan-frame__line" id="scan-line"></div>
+            <div class="scan-frame__hint" id="scan-hint">
+              <div class="scan-frame__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9V7a2 2 0 0 1 2-2h2"/><path d="M17 5h2a2 2 0 0 1 2 2v2"/>
+                  <path d="M21 15v2a2 2 0 0 1-2 2h-2"/><path d="M7 19H5a2 2 0 0 1-2-2v-2"/>
+                  <rect x="7" y="9" width="10" height="6" rx="1"/>
+                </svg>
+              </div>
+              <p>Take a photo or upload a receipt image</p>
+            </div>
+            <p class="scan-progress" id="scan-progress" hidden>Recognizing text… 0%</p>
           </div>
-          <p class="scan-progress" id="scan-progress" hidden>Recognizing text… 0%</p>
         </div>
 
         <div class="scan-result" id="scan-result" hidden>
@@ -116,7 +118,7 @@
               <input class="field__input" id="scan-merchant-input" type="text" required />
             </label>
             <label class="field">
-              <span class="field__label">Amount</span>
+              <span class="field__label">Total paid (incl. tax)</span>
               <div class="field__money">
                 <span class="field__prefix">$</span>
                 <input class="field__input field__input--money" id="scan-amount-input" type="number" inputmode="decimal" step="0.01" min="0" required />
@@ -146,10 +148,12 @@
         </div>
       </section>
 
-      <input type="file" id="ocr-camera" accept="image/*" capture="environment" hidden />
-      <input type="file" id="ocr-file" accept="image/*" hidden />
-      <button class="btn btn--primary btn--block" id="camera-btn" type="button">Take Photo</button>
-      <button class="btn btn--ghost btn--block" id="upload-btn" type="button">Upload from Gallery</button>
+      <div id="scan-actions">
+        <input type="file" id="ocr-camera" accept="image/*" capture="environment" hidden />
+        <input type="file" id="ocr-file" accept="image/*" hidden />
+        <button class="btn btn--primary btn--block" id="camera-btn" type="button">Take Photo</button>
+        <button class="btn btn--ghost btn--block" id="upload-btn" type="button">Upload from Gallery</button>
+      </div>
       <p class="scan-note" id="scan-note">Receipts are read on your device with OCR, then saved to your account.</p>
     </main>
 

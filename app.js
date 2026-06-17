@@ -339,6 +339,7 @@ async function sendMessageToGemini(userMessage) {
     category: e.category,
     date: e.date || tsToDate(e.createdAt),
     source: e.source,
+    totalIncludesTax: e.includesTax !== false,
   }));
   const subscriptionsJson = subscriptions.map((s) => ({
     name: s.name,
@@ -644,6 +645,10 @@ addBubble(
   "Hi! I'm your AI finance coach. Ask me about your spending, taxes, or savings goals. 💡",
   "ai"
 );
+
+document.addEventListener("finadvi:expense-saved", () => {
+  switchView("dashboard");
+});
 
 document.addEventListener("finadvi:ready", async (e) => {
   showAuthGate(false);
