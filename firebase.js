@@ -123,8 +123,8 @@ if (isConfigured) {
    2. Receipt text parsing (total, merchant, date)
    ------------------------------------------------------------ */
 
-// Matches money like 12.50 / 1,234.56 / 1 234.56
-const AMOUNT_RE = /(\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})/;
+// Matches money like 12.50 / 1,234.56 / 1 234.56 (global flag required for matchAll)
+const AMOUNT_RE = /(\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2})/g;
 
 const TOTAL_KEYWORDS = /\b(grand\s*total|total\s*due|amount\s*due|balance\s*due|total\s*paid|you\s*paid)\b/i;
 const SIMPLE_TOTAL_RE = /\btotal\b/i;
@@ -586,12 +586,13 @@ function setActionsVisible(visible) {
   if (actions) actions.hidden = !visible;
 }
 
-/** Prevent blank scan tab when upload buttons were left hidden without review. */
+/** Prevent blank scan tab when capture/actions were left hidden without review. */
 function ensureScanTabVisible() {
   const result = document.getElementById("scan-result");
+  const capture = document.getElementById("scan-capture");
   const actions = document.getElementById("scan-actions");
   const inReview = result && !result.hidden;
-  if (!inReview && actions?.hidden) {
+  if (!inReview && (capture?.hidden || actions?.hidden)) {
     resetScanUI();
   }
 }
@@ -622,12 +623,35 @@ function resetScanUI() {
     saveStatus.textContent = "";
     saveStatus.className = "scan-save";
   }
-  if (note) note.textContent = "Receipts are read on your device with OCR, then saved to your account.";
+  if (note) {
+    note.textContent = "Receipts are read on your device with OCR, then saved to your account.";
+    note.className = "scan-note";
+  }
   pendingScan = null;
   const capture = document.getElementById("scan-capture");
   if (capture) capture.hidden = false;
   setActionsVisible(true);
   setScanButtonsDisabled(false);
+}
+
+function scanErrorMessage(err) {
+  const msg = err?.message || "";
+  if (/matchAll|RegExp/i.test(msg)) {
+    return "Couldn't read amounts from this receipt. Try a clearer photo.";
+  }
+  if (/tesseract|worker|ocr/i.test(msg)) {
+    return "Couldn't read that image. Try a clearer photo in good light.";
+  }
+  return "Couldn't scan this receipt. Try again with a clearer photo.";
+}
+
+function showScanError(message) {
+  resetScanUI();
+  const note = document.getElementById("scan-note");
+  if (note) {
+    note.textContent = message;
+    note.className = "scan-note scan-note--err";
+  }
 }
 
 function showScanReview(parsed) {
@@ -642,8 +666,16 @@ function showScanReview(parsed) {
   if (categoryInput) categoryInput.value = parsed.category || "Other";
   if (dateInput) dateInput.value = parsed.date || new Date().toISOString().slice(0, 10);
 
+  const capture = document.getElementById("scan-capture");
+  if (capture) capture.hidden = true;
   setActionsVisible(false);
   if (result) result.hidden = false;
+
+  const note = document.getElementById("scan-note");
+  if (note) {
+    note.textContent = "Review the details below, then save to your expenses.";
+    note.className = "scan-note";
+  }
 }
 
 async function handleReceiptFile(file) {
@@ -683,16 +715,9 @@ async function handleReceiptFile(file) {
     frame.classList.remove("is-scanning");
     progress.hidden = true;
     showScanReview(pendingScan);
-    note.textContent = "Review the details below, then save to your expenses.";
   } catch (err) {
     console.error("[FinAdvi] OCR failed:", err);
-    frame.classList.remove("is-scanning");
-    progress.hidden = true;
-    hint.style.display = "flex";
-    corners.style.display = "";
-    preview.hidden = true;
-    setActionsVisible(true);
-    note.textContent = err.message || "Couldn't read that image. Try a clearer photo in good light.";
+    showScanError(scanErrorMessage(err));
   } finally {
     setScanButtonsDisabled(false);
   }
